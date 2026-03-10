@@ -4,8 +4,7 @@ import Stream from "@/models/Stream";
 import User from "@/models/User";
 import { verifyToken } from "@/lib/auth";
 
-export async function POST(req:Request){
-
+export async function POST(req: Request) {
   await connectDB();
 
   try {
@@ -35,38 +34,34 @@ export async function POST(req:Request){
 
     if (!user || user.role !== "seller") {
       return NextResponse.json(
-        { error: "Only sellers can pin products" },
+        { error: "Only sellers can start streams" },
         { status: 403 }
       );
     }
 
-    const { streamId, productId } = await req.json();
+    const body = await req.json();
+    const { title, categorySlug } = body;
 
-    if (!streamId || !productId) {
+    if (!title) {
       return NextResponse.json(
-        { error: "streamId and productId are required" },
+        { error: "Title is required" },
         { status: 400 }
       );
     }
 
-    const stream = await Stream.findOneAndUpdate(
-      { _id: streamId, seller: user._id },
-      { pinnedProduct: productId },
-      { new: true }
-    );
+    const stream = await Stream.create({
+      title,
+      seller: user._id,
+      status: "live",
+      categorySlug: categorySlug || undefined,
+    });
 
-    if (!stream) {
-      return NextResponse.json(
-        { error: "Stream not found or not owned by seller" },
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json(stream);
+    return NextResponse.json(stream, { status: 201 });
   } catch (error) {
     return NextResponse.json(
-      { error: "Failed to pin product" },
+      { error: "Failed to start stream" },
       { status: 500 }
     );
   }
 }
+

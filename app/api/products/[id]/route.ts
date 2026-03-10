@@ -33,21 +33,3 @@ export async function PUT(
 
   return NextResponse.json(product);
 }
-
-
-export async function PUT(
-  req: Request,
-  { params }: { params: { id: string } }
-) {
-  await connectDB();
-
-  const body = await req.json();
-
-  const product = await Product.findByIdAndUpdate(
-    params.id,
-    body,
-    { new: true }
-  );
-
-  return NextResponse.json(product);
-}
