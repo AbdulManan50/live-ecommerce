@@ -19,7 +19,8 @@ export default function LoginPage() {
       const res = await loginUser({ email, password });
       if (res?.token) {
         saveToken(res.token);
-        window.location.href = "/streams";
+        const params = new URLSearchParams(window.location.search);
+        window.location.href = params.get("redirect") || "/";
       } else if (res?.error) {
         setError(res.error);
       }

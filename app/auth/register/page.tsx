@@ -20,7 +20,8 @@ export default function RegisterPage() {
       const res = await registerUser({ name, email, password });
       if (res?.token) {
         saveToken(res.token);
-        window.location.href = "/streams";
+        const params = new URLSearchParams(window.location.search);
+        window.location.href = params.get("redirect") || "/";
       } else if (res?.error) {
         setError(res.error);
       }

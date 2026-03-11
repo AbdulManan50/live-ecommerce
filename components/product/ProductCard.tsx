@@ -1,3 +1,10 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { getToken } from "@/lib/auth-client";
+import { apiRequest } from "@/lib/api";
+
 type ProductCardProps = {
   product: {
     _id: string;
@@ -8,6 +15,43 @@ type ProductCardProps = {
 };
 
 export default function ProductCard({ product }: ProductCardProps) {
+  const router = useRouter();
+  const [adding, setAdding] = useState(false);
+
+  const handleBuyNow = async () => {
+    if (adding) return;
+
+    const token = getToken();
+    if (!token) {
+      router.push("/auth/login");
+      return;
+    }
+
+    setAdding(true);
+    try {
+      const me = await apiRequest("/api/users/me", "GET", undefined, {
+        authToken: token,
+      });
+
+      if (!me?._id) {
+        router.push("/auth/login");
+        return;
+      }
+
+      await apiRequest("/api/cart/add", "POST", {
+        userId: me._id,
+        productId: product._id,
+        quantity: 1,
+      });
+
+      router.push("/cart");
+    } catch {
+      // For MVP, ignore errors; you could show feedback here.
+    } finally {
+      setAdding(false);
+    }
+  };
+
   return (
     <div className="border border-zinc-800 rounded-2xl p-4 bg-zinc-950/70 hover:border-emerald-500/50 transition-colors flex flex-col gap-3">
       <div className="aspect-video rounded-xl bg-zinc-900 overflow-hidden flex items-center justify-center">
@@ -32,8 +76,12 @@ export default function ProductCard({ product }: ProductCardProps) {
         </p>
       </div>
 
-      <button className="mt-1 w-full rounded-lg bg-emerald-500 hover:bg-emerald-400 text-black text-sm font-medium py-2.5 transition-colors">
-        Buy Now
+      <button
+        onClick={handleBuyNow}
+        disabled={adding}
+        className="mt-1 w-full rounded-lg bg-emerald-500 hover:bg-emerald-400 disabled:opacity-60 disabled:cursor-not-allowed text-black text-sm font-medium py-2.5 transition-colors"
+      >
+        {adding ? "Adding…" : "Buy Now"}
       </button>
     </div>
   );

@@ -3,7 +3,10 @@
 import LivePlayer from "@/components/stream/LivePlayer";
 import ChatBox from "@/components/stream/ChatBox";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { getStreamById } from "@/services/stream.service";
+import { getToken } from "@/lib/auth-client";
+import { apiRequest } from "@/lib/api";
 
 type StreamDetail = {
   _id: string;
@@ -18,9 +21,11 @@ type StreamDetail = {
 };
 
 export default function StreamPage({ params }: { params: { id: string } }) {
+  const router = useRouter();
   const [stream, setStream] = useState<StreamDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [adding, setAdding] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -42,6 +47,40 @@ export default function StreamPage({ params }: { params: { id: string } }) {
       active = false;
     };
   }, [params.id]);
+
+  const handleBuyPinned = async () => {
+    if (!stream?.pinnedProduct || adding) return;
+
+    const token = getToken();
+    if (!token) {
+      router.push("/auth/login");
+      return;
+    }
+
+    setAdding(true);
+    try {
+      const me = await apiRequest("/api/users/me", "GET", undefined, {
+        authToken: token,
+      });
+
+      if (!me?._id) {
+        router.push("/auth/login");
+        return;
+      }
+
+      await apiRequest("/api/cart/add", "POST", {
+        userId: me._id,
+        productId: stream.pinnedProduct._id,
+        quantity: 1,
+      });
+
+      router.push("/cart");
+    } catch {
+      // ignore for now
+    } finally {
+      setAdding(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-linear-to-b from-black via-zinc-950 to-black">
@@ -82,8 +121,12 @@ export default function StreamPage({ params }: { params: { id: string } }) {
                   <p className="mt-1 text-lg font-semibold text-emerald-300">
                     ${stream.pinnedProduct.price.toFixed(2)}
                   </p>
-                  <button className="mt-3 w-full rounded-lg bg-emerald-500 hover:bg-emerald-400 text-black text-sm font-medium py-2.5 transition-colors">
-                    Buy Now
+                  <button
+                    onClick={handleBuyPinned}
+                    disabled={adding}
+                    className="mt-3 w-full rounded-lg bg-emerald-500 hover:bg-emerald-400 disabled:opacity-60 disabled:cursor-not-allowed text-black text-sm font-medium py-2.5 transition-colors"
+                  >
+                    {adding ? "Adding…" : "Buy Now"}
                   </button>
                 </div>
               )}
