@@ -2,11 +2,23 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
+import Link from "next/link";
+import { apiRequest } from "@/lib/api";
+import { clearToken, getToken } from "@/lib/auth-client";
+import { roleHomePath } from "@/lib/role-redirect";
 
 type NavItem = {
   href: string;
   label: string;
   icon: React.ReactNode;
+};
+
+type Me = {
+  _id: string;
+  name?: string;
+  email?: string;
+  role: "user" | "seller" | "admin";
+  avatarUrl?: string;
 };
 
 function Icon({ name }: { name: string }) {
@@ -81,19 +93,71 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     pathname.startsWith("/vendor") ||
     pathname.startsWith("/dashboard");
 
-  const items: NavItem[] = useMemo(
-    () => [
+  const [me, setMe] = useState<Me | null>(null);
+  const [authChecked, setAuthChecked] = useState(false);
+
+  useEffect(() => {
+    const token = getToken();
+    if (!token) {
+      setMe(null);
+      setAuthChecked(true);
+      return;
+    }
+
+    (async () => {
+      try {
+        const user = await apiRequest("/api/users/me", "GET", undefined, {
+          authToken: token,
+        });
+        setMe(user);
+      } catch {
+        clearToken();
+        setMe(null);
+      } finally {
+        setAuthChecked(true);
+      }
+    })();
+  }, []);
+
+  const items: NavItem[] = useMemo(() => {
+    const base: NavItem[] = [
       { href: "/", label: "Home", icon: <Icon name="home" /> },
       { href: "/streams", label: "Live Streams", icon: <Icon name="streams" /> },
       { href: "/products", label: "Products", icon: <Icon name="products" /> },
       { href: "/categories", label: "Categories", icon: <Icon name="categories" /> },
       { href: "/cart", label: "Cart", icon: <Icon name="cart" /> },
       { href: "/wishlist", label: "Wishlist", icon: <Icon name="wishlist" /> },
-      { href: "/dashboard", label: "User Dashboard", icon: <Icon name="user" /> },
-      { href: "/vendor", label: "Vendor Dashboard", icon: <Icon name="vendor" /> },
-    ],
-    []
-  );
+    ];
+
+    // Role-aware dashboard links
+    if (me?.role === "user") {
+      base.push({
+        href: "/dashboard",
+        label: "User Dashboard",
+        icon: <Icon name="user" />,
+      });
+    } else if (me?.role === "seller") {
+      base.push({
+        href: "/vendor",
+        label: "Vendor Dashboard",
+        icon: <Icon name="vendor" />,
+      });
+    } else if (me?.role === "admin") {
+      base.push({
+        href: "/admin",
+        label: "Admin Console",
+        icon: <Icon name="user" />,
+      });
+    } else {
+      // Logged out: show both entries as options
+      base.push(
+        { href: "/dashboard", label: "User Dashboard", icon: <Icon name="user" /> },
+        { href: "/vendor", label: "Vendor Dashboard", icon: <Icon name="vendor" /> }
+      );
+    }
+
+    return base;
+  }, [me?.role]);
 
   const [collapsed, setCollapsed] = useState(() => {
     if (typeof window === "undefined") return false;
@@ -109,6 +173,11 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   };
 
   if (hideShell) return <>{children}</>;
+
+  const logout = () => {
+    clearToken();
+    window.location.href = "/auth/login";
+  };
 
   return (
     <div className="min-h-screen bg-[#07070a] text-zinc-50">
@@ -156,7 +225,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                 const active = pathname === item.href;
                 return (
                   <li key={item.href}>
-                    <a
+                    <Link
                       href={item.href}
                       className={[
                         "flex items-center gap-3 rounded-xl border px-3 py-2 text-sm transition-colors",
@@ -169,7 +238,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                     >
                       <span className="text-zinc-200">{item.icon}</span>
                       {!collapsed && <span>{item.label}</span>}
-                    </a>
+                    </Link>
                   </li>
                 );
               })}
@@ -186,12 +255,50 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                 <span className="text-zinc-400">{pathname}</span>
               </div>
               <div className="flex items-center gap-2">
-                <a
-                  href="/auth/login"
-                  className="rounded-lg border border-zinc-800 bg-zinc-950/60 px-3 py-1.5 text-xs text-zinc-200 hover:border-emerald-500/40 hover:text-emerald-200 transition-colors"
-                >
-                  Login
-                </a>
+                {!authChecked ? null : me?._id ? (
+                  <>
+                    <Link
+                      href={roleHomePath(me.role)}
+                      className="rounded-lg border border-zinc-800 bg-zinc-950/60 px-3 py-1.5 text-xs text-zinc-200 hover:border-emerald-500/40 hover:text-emerald-200 transition-colors"
+                    >
+                      Dashboard
+                    </Link>
+                    <button
+                      onClick={logout}
+                      className="rounded-lg border border-zinc-800 bg-zinc-950/60 px-3 py-1.5 text-xs text-zinc-200 hover:border-red-500/40 hover:text-red-200 transition-colors"
+                      type="button"
+                    >
+                      Logout
+                    </button>
+                    <div className="ml-1 h-8 w-8 rounded-full border border-zinc-800 bg-zinc-900 overflow-hidden flex items-center justify-center text-[11px] text-zinc-300">
+                      {me.avatarUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={me.avatarUrl}
+                          alt={me.name || "Profile"}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        (me.name || me.email || "?").slice(0, 1).toUpperCase()
+                      )}
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <Link
+                      href="/auth/login"
+                      className="rounded-lg border border-zinc-800 bg-zinc-950/60 px-3 py-1.5 text-xs text-zinc-200 hover:border-emerald-500/40 hover:text-emerald-200 transition-colors"
+                    >
+                      Login
+                    </Link>
+                    <Link
+                      href="/auth/register"
+                      className="rounded-lg bg-emerald-500 hover:bg-emerald-400 px-3 py-1.5 text-xs font-semibold text-black transition-colors"
+                    >
+                      Signup
+                    </Link>
+                  </>
+                )}
               </div>
             </div>
           </header>

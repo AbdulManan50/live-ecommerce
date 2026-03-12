@@ -21,9 +21,7 @@ const STORE_CATEGORIES = [
 export default function VendorOnboardingPage() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [category, setCategory] = useState<(typeof STORE_CATEGORIES)[number]>(
-    "Clothing & Fashion"
-  );
+  const [category, setCategory] = useState<string>("");
   const [contactEmail, setContactEmail] = useState("");
   const [contactPhone, setContactPhone] = useState("");
   const [logoUrl, setLogoUrl] = useState<string>("");
@@ -168,10 +166,14 @@ export default function VendorOnboardingPage() {
               <select
                 value={category}
                 onChange={(e) =>
-                  setCategory(e.target.value as (typeof STORE_CATEGORIES)[number])
+                  setCategory(e.target.value)
                 }
                 className="w-full rounded-xl border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 outline-none focus:ring-2 focus:ring-emerald-500/60"
+                required
               >
+                <option value="" disabled>
+                  Select a category…
+                </option>
                 {STORE_CATEGORIES.map((c) => (
                   <option key={c} value={c}>
                     {c}

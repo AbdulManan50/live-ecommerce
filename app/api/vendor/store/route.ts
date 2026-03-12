@@ -4,6 +4,23 @@ import { verifyToken } from "@/lib/auth";
 import User from "@/models/User";
 import Store from "@/models/Store";
 
+const STORE_CATEGORIES = [
+  "Clothing & Fashion",
+  "Electronics",
+  "Shoes & Footwear",
+  "Beauty & Cosmetics",
+  "Home & Kitchen",
+  "Sports & Fitness",
+  "Bags & Accessories",
+  "Mobile & Gadgets",
+  "Jewelry & Watches",
+  "Kids & Toys",
+] as const;
+
+function isValidCategory(v: unknown): v is (typeof STORE_CATEGORIES)[number] {
+  return typeof v === "string" && (STORE_CATEGORIES as readonly string[]).includes(v);
+}
+
 async function requireSeller(req: Request) {
   const authHeader = req.headers.get("authorization");
   if (!authHeader) {
@@ -47,6 +64,16 @@ export async function POST(req: Request) {
   }
 
   const body = await req.json();
+  if (!isValidCategory(body?.category)) {
+    return NextResponse.json(
+      { error: "Store category is required" },
+      { status: 400 }
+    );
+  }
+  if (!String(body?.name || "").trim()) {
+    return NextResponse.json({ error: "Store name is required" }, { status: 400 });
+  }
+
   const store = await Store.create({
     owner: user!._id,
     name: body?.name,
@@ -61,5 +88,35 @@ export async function POST(req: Request) {
   await user!.save();
 
   return NextResponse.json(store, { status: 201 });
+}
+
+export async function PUT(req: Request) {
+  await connectDB();
+  const { error, user } = await requireSeller(req);
+  if (error) return error;
+
+  const store = await Store.findOne({ owner: user!._id });
+  if (!store) {
+    return NextResponse.json({ error: "Store not found" }, { status: 404 });
+  }
+
+  const body = await req.json();
+  if (body?.category !== undefined && !isValidCategory(body.category)) {
+    return NextResponse.json({ error: "Invalid store category" }, { status: 400 });
+  }
+
+  if (body?.name !== undefined) store.name = String(body.name || "").trim();
+  if (body?.description !== undefined) store.description = body.description;
+  if (body?.logoUrl !== undefined) store.logoUrl = body.logoUrl;
+  if (body?.contactEmail !== undefined) store.contactEmail = body.contactEmail;
+  if (body?.contactPhone !== undefined) store.contactPhone = body.contactPhone;
+  if (body?.category !== undefined) store.category = body.category;
+
+  if (!store.name) {
+    return NextResponse.json({ error: "Store name is required" }, { status: 400 });
+  }
+
+  await store.save();
+  return NextResponse.json(store);
 }
 

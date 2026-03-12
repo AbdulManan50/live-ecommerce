@@ -3,6 +3,8 @@ import { v2 as cloudinary } from "cloudinary";
 
 export const runtime = "nodejs";
 
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024; // 5MB
+
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
@@ -11,11 +13,36 @@ cloudinary.config({
 
 export async function POST(req: Request) {
   try {
+    if (
+      !process.env.CLOUDINARY_CLOUD_NAME ||
+      !process.env.CLOUDINARY_API_KEY ||
+      !process.env.CLOUDINARY_API_SECRET
+    ) {
+      return NextResponse.json(
+        { error: "Image upload is not configured on the server." },
+        { status: 500 }
+      );
+    }
+
     const form = await req.formData();
     const file = form.get("file");
 
     if (!(file instanceof File)) {
       return NextResponse.json({ error: "file is required" }, { status: 400 });
+    }
+
+    if (!file.type?.startsWith("image/")) {
+      return NextResponse.json(
+        { error: "Only image files are allowed" },
+        { status: 400 }
+      );
+    }
+
+    if (file.size > MAX_IMAGE_BYTES) {
+      return NextResponse.json(
+        { error: "Image too large (max 5MB)" },
+        { status: 400 }
+      );
     }
 
     const arrayBuffer = await file.arrayBuffer();
