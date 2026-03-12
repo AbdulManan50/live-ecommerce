@@ -4,12 +4,14 @@ import Stream from "@/models/Stream";
 
 export async function GET(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   await connectDB();
 
   try {
-    const stream = await Stream.findById(params.id)
+    const { id } = await params;
+
+    const stream = await Stream.findById(id)
       .populate("seller")
       .populate("pinnedProduct");
 

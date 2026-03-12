@@ -7,6 +7,15 @@ const UserSchema = new mongoose.Schema(
       type: String,
       unique: true,
     },
+    avatarUrl: {
+      type: String,
+    },
+    store: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Store",
+      default: null,
+      index: true,
+    },
     password: String,
     role: {
       type: String,

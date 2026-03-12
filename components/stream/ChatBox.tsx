@@ -3,14 +3,18 @@
 import { useEffect, useState } from "react";
 import { getSocket } from "@/lib/socket-client";
 import { apiRequest } from "@/lib/api";
+import { getToken } from "@/lib/auth-client";
+import { useRouter } from "next/navigation";
 
 type ChatMessage = {
   _id?: string;
   text: string;
   userName?: string;
+  userAvatarUrl?: string;
 };
 
 export default function ChatBox({ streamId }: { streamId: string }) {
+  const router = useRouter();
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
 
@@ -25,6 +29,7 @@ export default function ChatBox({ streamId }: { streamId: string }) {
           _id: m._id,
           text: m.text,
           userName: m.user?.name,
+          userAvatarUrl: m.user?.avatarUrl,
         }));
         setMessages(mapped);
       } catch {
@@ -44,6 +49,7 @@ export default function ChatBox({ streamId }: { streamId: string }) {
           _id: data._id,
           text: data.text,
           userName: data.user?.name,
+          userAvatarUrl: data.user?.avatarUrl,
         },
       ]);
     });
@@ -61,17 +67,29 @@ export default function ChatBox({ streamId }: { streamId: string }) {
       text: message,
     };
 
-    // Emit over socket if available
-    try {
-      const socket = getSocket();
-      socket.emit("send_message", payload);
-    } catch {
-      // ignore socket failures in MVP
+    const token = getToken();
+    if (!token) {
+      router.push("/auth/login");
+      return;
     }
 
     // Persist via HTTP and refresh local list
     try {
-      await apiRequest("/api/streams/messages/send", "POST", payload);
+      const created = await apiRequest("/api/streams/messages/send", "POST", payload, {
+        authToken: token,
+      });
+
+      // Broadcast to others with full user info (so UI can show avatar/name instantly)
+      try {
+        const socket = getSocket();
+        socket.emit("send_message", {
+          ...created,
+          user: created.user,
+        });
+      } catch {
+        // ignore socket failures in MVP
+      }
+
       const data = await apiRequest("/api/streams/messages", "POST", {
         streamId,
       });
@@ -79,6 +97,7 @@ export default function ChatBox({ streamId }: { streamId: string }) {
         _id: m._id,
         text: m.text,
         userName: m.user?.name,
+        userAvatarUrl: m.user?.avatarUrl,
       }));
       setMessages(mapped);
     } catch {
@@ -99,13 +118,29 @@ export default function ChatBox({ streamId }: { streamId: string }) {
           <p className="text-zinc-500">No messages yet. Be the first to say hi!</p>
         ) : (
           messages.map((m, idx) => (
-            <div key={m._id || idx} className="flex flex-col">
-              {m.userName && (
-                <span className="text-xs font-medium text-emerald-400">
-                  {m.userName}
-                </span>
-              )}
-              <span className="text-zinc-100">{m.text}</span>
+            <div key={m._id || idx} className="flex gap-2">
+              <div className="shrink-0">
+                {m.userAvatarUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={m.userAvatarUrl}
+                    alt={m.userName || "User"}
+                    className="h-7 w-7 rounded-full object-cover border border-zinc-800"
+                  />
+                ) : (
+                  <div className="h-7 w-7 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center text-[10px] text-zinc-400">
+                    {m.userName?.slice(0, 1)?.toUpperCase() || "?"}
+                  </div>
+                )}
+              </div>
+              <div className="flex flex-col">
+                {m.userName && (
+                  <span className="text-xs font-medium text-emerald-400">
+                    {m.userName}
+                  </span>
+                )}
+                <span className="text-zinc-100">{m.text}</span>
+              </div>
             </div>
           ))
         )}

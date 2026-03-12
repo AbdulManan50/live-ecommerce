@@ -7,7 +7,7 @@ import { generateToken } from "@/utils/generateToken";
 export async function POST(req: Request) {
   await connectDB();
 
-  const { email, password } = await req.json();
+  const { email, password, expectedRole } = await req.json();
 
   const user = await User.findOne({ email });
 
@@ -19,6 +19,12 @@ export async function POST(req: Request) {
 
   if (!valid) {
     return NextResponse.json({ error: "Invalid credentials" });
+  }
+
+  if (expectedRole && user.role !== expectedRole) {
+    return NextResponse.json({
+      error: `Invalid portal for this account. Please sign in as ${user.role}.`,
+    });
   }
 
   const token = generateToken(user._id.toString());

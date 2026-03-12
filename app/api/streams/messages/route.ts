@@ -10,7 +10,7 @@ const {streamId} = await req.json()
 
 const messages = await Message.find({
 stream:streamId
-}).populate("user")
+}).populate("user","name avatarUrl")
 
 return NextResponse.json(messages)
 

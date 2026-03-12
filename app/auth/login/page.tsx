@@ -1,99 +1,81 @@
 "use client";
 
-import { useState } from "react";
-import { loginUser } from "@/services/auth.service";
-import { saveToken } from "@/lib/auth-client";
+import { useRouter } from "next/navigation";
 
-export default function LoginPage() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+function Card({
+  title,
+  description,
+  onClick,
+}: {
+  title: string;
+  description: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className="group w-full text-left rounded-2xl border border-zinc-800 bg-zinc-950/70 p-5 hover:border-emerald-500/50 hover:bg-zinc-950/85 transition-colors"
+    >
+      <div className="flex items-start justify-between gap-4">
+        <div className="space-y-1">
+          <p className="text-sm font-semibold text-zinc-50">{title}</p>
+          <p className="text-xs text-zinc-400">{description}</p>
+        </div>
+        <span className="text-xs text-emerald-300 group-hover:text-emerald-200">
+          Continue →
+        </span>
+      </div>
+    </button>
+  );
+}
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setLoading(true);
-
-    try {
-      const res = await loginUser({ email, password });
-      if (res?.token) {
-        saveToken(res.token);
-        const params = new URLSearchParams(window.location.search);
-        window.location.href = params.get("redirect") || "/";
-      } else if (res?.error) {
-        setError(res.error);
-      }
-    } catch (err: any) {
-      setError(err?.message || "Failed to login");
-    } finally {
-      setLoading(false);
-    }
-  };
+export default function LoginChooserPage() {
+  const router = useRouter();
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-linear-to-b from-black via-zinc-950 to-black px-4">
-      <div className="w-full max-w-md rounded-2xl border border-zinc-800 bg-zinc-950/80 px-6 py-8 shadow-2xl">
-        <h1 className="text-2xl font-semibold text-zinc-50 mb-1">
-          Welcome back
-        </h1>
-        <p className="text-sm text-zinc-400 mb-6">
-          Sign in to join live streams and shop in real time.
-        </p>
+    <div className="min-h-screen bg-linear-to-b from-black via-zinc-950 to-black text-zinc-50">
+      <div className="mx-auto max-w-5xl px-4 py-10 md:py-14">
+        <div className="max-w-2xl space-y-3">
+          <p className="text-[11px] uppercase tracking-widest text-zinc-500">
+            Choose your portal
+          </p>
+          <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">
+            Sign in to LiveCommerce
+          </h1>
+          <p className="text-sm text-zinc-400">
+            Separate portals keep vendor tools, admin controls, and shopping
+            experience clean and secure.
+          </p>
+        </div>
 
-        {error && (
-          <div className="mb-4 rounded-lg border border-red-500/50 bg-red-950/40 px-3 py-2 text-xs text-red-100">
-            {error}
-          </div>
-        )}
+        <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Card
+            title="Login as User"
+            description="Watch streams, wishlist items, and checkout."
+            onClick={() => router.push("/auth/login/user")}
+          />
+          <Card
+            title="Login as Vendor / Seller"
+            description="Manage products, go live, and fulfill orders."
+            onClick={() => router.push("/auth/login/vendor")}
+          />
+          <Card
+            title="Admin login"
+            description="Manage platform users, vendors, products and orders."
+            onClick={() => router.push("/auth/login/admin")}
+          />
+        </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-xs font-medium text-zinc-300 mb-1.5">
-              Email
-            </label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 outline-none focus:ring-2 focus:ring-emerald-500/70"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-medium text-zinc-300 mb-1.5">
-              Password
-            </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 outline-none focus:ring-2 focus:ring-emerald-500/70"
-              required
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full mt-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 disabled:opacity-60 disabled:cursor-not-allowed text-black text-sm font-medium py-2.5 transition-colors"
-          >
-            {loading ? "Signing in..." : "Sign in"}
-          </button>
-        </form>
-
-        <p className="mt-4 text-xs text-zinc-400 text-center">
-          New here?{" "}
+        <div className="mt-6 text-xs text-zinc-500">
+          Don&apos;t have an account?{" "}
           <a
             href="/auth/register"
-            className="text-emerald-400 hover:text-emerald-300 underline-offset-4 hover:underline"
+            className="text-emerald-300 hover:text-emerald-200 underline-offset-4 hover:underline"
           >
-            Create an account
+            Create a user account
           </a>
-        </p>
+        </div>
       </div>
     </div>
   );
 }
-

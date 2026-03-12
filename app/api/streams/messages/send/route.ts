@@ -41,7 +41,12 @@ export async function POST(req: Request) {
       text,
     });
 
-    return NextResponse.json(message, { status: 201 });
+    const populated = await Message.findById(message._id).populate(
+      "user",
+      "name avatarUrl"
+    );
+
+    return NextResponse.json(populated, { status: 201 });
   } catch (error) {
     return NextResponse.json(
       { error: "Failed to send message" },

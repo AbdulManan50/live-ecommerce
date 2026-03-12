@@ -15,7 +15,9 @@ export async function POST(req: Request) {
 export async function GET() {
   await connectDB();
 
-  const products = await Product.find().populate("seller");
+  const products = await Product.find()
+    .populate("seller")
+    .populate("category");
 
   return NextResponse.json(products);
 }

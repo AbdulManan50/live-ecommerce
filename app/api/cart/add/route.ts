@@ -15,10 +15,18 @@ export async function POST(req: Request) {
       items: [{ product: productId, quantity }],
     });
   } else {
-    cart.items.push({
-      product: productId,
-      quantity,
-    });
+    const existing = cart.items.find(
+      (i: any) => i.product.toString() === productId
+    );
+
+    if (existing) {
+      existing.quantity = (existing.quantity || 0) + Number(quantity || 1);
+    } else {
+      cart.items.push({
+        product: productId,
+        quantity,
+      });
+    }
 
     await cart.save();
   }

@@ -1,15 +1,14 @@
 import { NextResponse } from "next/server";
-import { sanityClient } from "@/lib/sanity";
+import { connectDB } from "@/lib/db";
+import Category from "@/models/Category";
 
 export async function GET() {
   try {
-    const categories = await sanityClient.fetch(
-      `*[_type == "category"] | order(orderRank asc){
-        _id,
-        title,
-        "slug": slug.current
-      }`
-    );
+    await connectDB();
+
+    const categories = await Category.find()
+      .sort({ title: 1 })
+      .select("title slug");
 
     return NextResponse.json(categories);
   } catch (error) {
