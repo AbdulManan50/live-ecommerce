@@ -247,62 +247,6 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         </aside>
 
         <div className="min-w-0">
-          <header className="sticky top-0 z-20 border-b border-zinc-900/80 bg-zinc-950/50 backdrop-blur">
-            <div className="px-4 md:px-6 py-3 flex items-center justify-between">
-              <div className="text-sm text-zinc-300">
-                <span className="text-zinc-50 font-semibold">LiveCommerce</span>{" "}
-                <span className="text-zinc-500">/</span>{" "}
-                <span className="text-zinc-400">{pathname}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                {!authChecked ? null : me?._id ? (
-                  <>
-                    <Link
-                      href={roleHomePath(me.role)}
-                      className="rounded-lg border border-zinc-800 bg-zinc-950/60 px-3 py-1.5 text-xs text-zinc-200 hover:border-emerald-500/40 hover:text-emerald-200 transition-colors"
-                    >
-                      Dashboard
-                    </Link>
-                    <button
-                      onClick={logout}
-                      className="rounded-lg border border-zinc-800 bg-zinc-950/60 px-3 py-1.5 text-xs text-zinc-200 hover:border-red-500/40 hover:text-red-200 transition-colors"
-                      type="button"
-                    >
-                      Logout
-                    </button>
-                    <div className="ml-1 h-8 w-8 rounded-full border border-zinc-800 bg-zinc-900 overflow-hidden flex items-center justify-center text-[11px] text-zinc-300">
-                      {me.avatarUrl ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={me.avatarUrl}
-                          alt={me.name || "Profile"}
-                          className="h-full w-full object-cover"
-                        />
-                      ) : (
-                        (me.name || me.email || "?").slice(0, 1).toUpperCase()
-                      )}
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <Link
-                      href="/auth/login"
-                      className="rounded-lg border border-zinc-800 bg-zinc-950/60 px-3 py-1.5 text-xs text-zinc-200 hover:border-emerald-500/40 hover:text-emerald-200 transition-colors"
-                    >
-                      Login
-                    </Link>
-                    <Link
-                      href="/auth/register"
-                      className="rounded-lg bg-emerald-500 hover:bg-emerald-400 px-3 py-1.5 text-xs font-semibold text-black transition-colors"
-                    >
-                      Signup
-                    </Link>
-                  </>
-                )}
-              </div>
-            </div>
-          </header>
-
           <main className="px-4 md:px-6 py-6">{children}</main>
         </div>
       </div>

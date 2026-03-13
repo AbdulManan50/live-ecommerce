@@ -49,13 +49,20 @@ export default function StreamPage({ params }: { params: { id: string } }) {
 
     (async () => {
       try {
-        const [data, vendorProducts] = await Promise.all([
-          getStreamById(params.id),
-          apiRequest(`/api/streams/${params.id}/products`, "GET").catch(() => []),
-        ]);
+        const data = await getStreamById(params.id);
         if (!active) return;
+
         setStream(data);
-        setProducts(vendorProducts || []);
+
+        const sellerId = data?.seller?._id;
+        if (sellerId) {
+          const vendorProducts = await apiRequest(
+            `/api/products?sellerId=${sellerId}`,
+            "GET"
+          ).catch(() => []);
+          if (!active) return;
+          setProducts(vendorProducts || []);
+        }
       } catch (err: any) {
         if (!active) return;
         setError(err?.message || "Failed to load stream");

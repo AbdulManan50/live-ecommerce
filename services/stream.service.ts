@@ -8,8 +8,13 @@ export const getStreamById = (id: string) => {
   return apiRequest(`/api/streams/${id}`);
 };
 
-export const startStream = (data: { title: string; categorySlug?: string }) => {
-  return apiRequest("/api/streams/start", "POST", data);
+export const startStream = (
+  data: { title: string; categorySlug?: string },
+  authToken?: string
+) => {
+  return apiRequest("/api/streams/start", "POST", data, {
+    authToken,
+  });
 };
 
 export const endStream = (data: { streamId: string }) => {

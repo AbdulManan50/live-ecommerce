@@ -95,6 +95,7 @@ export default function SellerDashboard() {
 
       const stream = await startStream(
         { title, categorySlug: categorySlug || undefined },
+        token
       );
 
       setStreams((prev) => [stream, ...prev]);
@@ -546,7 +547,7 @@ export default function SellerDashboard() {
                           </div>
                           <div className="flex items-center gap-2">
                             <span className="text-xs text-emerald-300">
-                              ${p.price.toFixed(2)}
+                              ${(p.price ?? 0).toFixed(2)}
                             </span>
                             <button
                               onClick={() => startEdit(p)}

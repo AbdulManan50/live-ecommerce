@@ -52,10 +52,13 @@ export default function VendorLiveStreamsPage() {
       }
 
       // startStream uses /api/streams/start which requires seller auth
-      const stream = await startStream({
-        title,
-        categorySlug: categorySlug || undefined,
-      });
+      const stream = await startStream(
+        {
+          title,
+          categorySlug: categorySlug || undefined,
+        },
+        token
+      );
       setStreams((prev) => [stream, ...prev]);
       setTitle("");
       setCategorySlug("");

@@ -106,7 +106,7 @@ export default function ProductCard({ product }: ProductCardProps) {
           {product.title}
         </h3>
         <p className="text-lg font-semibold text-emerald-300">
-          ${product.price.toFixed(2)}
+          {product.price != null ? `$${product.price.toFixed(2)}` : "Price not available"}
         </p>
       </div>
 
